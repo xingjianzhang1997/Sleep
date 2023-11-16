@@ -143,6 +143,8 @@ class BaseTrainer:
                 if "labels" in file:
                     labels_list.append(os.path.join(root, file))
 
+        print("最终结果由 {}折 组成".format(len(pres_list)))
+
         for i in range(len(pres_list)):
             all_pres.extend(np.load(pres_list[i]))
             all_labels.extend(np.load(labels_list[i]))

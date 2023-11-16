@@ -100,8 +100,8 @@ def testModel(myModel, Data):
 
     return outs, trgs
 
-# 数据保存地址
-savePath = "/home/xingjian.zhang/sleep/3_result/00_SC_FPZ-Cz_model/"    # 02_SC_EOG_model\00_SC_FPZ-Cz_model
+# 结果保存地址
+savePath = "/home/xingjian.zhang/sleep/3_independent_result/00_SC_FPZ-Cz_model/"    # 02_SC_EOG_model\00_SC_FPZ-Cz_model
 if not os.path.exists(savePath):
     os.makedirs(savePath)
 

@@ -36,8 +36,10 @@ class Trainer(BaseTrainer):
         self.class_weights = class_weights
         self.data_count = data_count  # 每个类别的数据量
 
+        self.step_size = config["StepLR"]["step_size"]
+        self.gamma = config["StepLR"]["gamma"]
         # 创建StepLR学习率调度器，每step_size个epoch，学习率衰减*gamma
-        self.scheduler = StepLR(optimizer, step_size=10, gamma=0.5)
+        self.scheduler = StepLR(optimizer, step_size=self.step_size, gamma=self.gamma)
 
     def _train_epoch(self, epoch):
         """每个epoch的训练函数，同时会调用验证函数"""

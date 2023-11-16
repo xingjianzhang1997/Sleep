@@ -1,12 +1,13 @@
 {
-    "name": "00_ST_FPZ-Cz",
+    "name": "04_ST_FPZ-Cz&EOG",
+
     "npz_file": "/home/xingjian.zhang/sleep/0_data/01_sleepNPZdata/",
 
     "n_gpu": 1,
     "device": 0,
 
     "arch": {
-        "type": "AttnSleep",
+        "type": "AttnSleep_2CH_S1",
         "args": {
         }
     },
@@ -26,9 +27,16 @@
             "ams_grad": true
         }
     },
-    
+
+    "StepLR": {
+        "step_size": 10,
+        "gamma": 0.5
+    },
+
     "loss": "weighted_CrossEntropyLoss",
-    
+
+    "early_stop_fold": false,
+
     "metrics": [
         "accuracy"
     ],
@@ -37,9 +45,9 @@
     ],
 
     "trainer": {
-        "epochs": 10,
+        "epochs": 50,
         "save_dir": "../4_save/",
-        "save_period": 5,
+        "save_period": 25,
         "verbosity": 1,
         "monitor": "loss"
     }

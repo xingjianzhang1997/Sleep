@@ -2,10 +2,10 @@
 """
 1.Function：AI模型结构
 2.Author：xingjian.zhang
-3.Time：20231907
-4.Others：来源：《AttnSleep: An Attention-based Deep Learning Approach for Sleep Stage Classification with Single-Channel EEG》.
+3.Time：20231116
+4.Others：(1) 来源：《AttnSleep: An Attention-based Deep Learning Approach for Sleep Stage Classification with Single-Channel EEG》.
+          (2) 原单通道的AI网络模型结构修改为双通道（1个EEG+1个EOG）输入（增加MRCNN后合并，再共同输入TCE）
 """
-
 
 import torch
 import torch.nn as nn
@@ -21,7 +21,7 @@ class SELayer(nn.Module):
         self.avg_pool = nn.AdaptiveAvgPool1d(1)  # 自适应平均池化，将其调整为一个长度为1的输出
         self.fc = nn.Sequential(
             nn.Linear(channel, channel // reduction, bias=False),
-            nn.ReLU(inplace=True),   # inplace=True表示在计算ReLU时会修改输入的张量，而不是创建一个新的张量。这可以节省内存。
+            nn.ReLU(inplace=True),  # inplace=True表示在计算ReLU时会修改输入的张量，而不是创建一个新的张量。这可以节省内存。
             nn.Linear(channel // reduction, channel, bias=False),
             nn.Sigmoid()
         )
@@ -72,12 +72,12 @@ class GELU(nn.Module):
     # for older versions of PyTorch.  For new versions you can use nn.GELU() instead.
     def __init__(self):
         super(GELU, self).__init__()
-        
+
     def forward(self, x):
         x = torch.nn.functional.gelu(x)
         return x
-        
-        
+
+
 class MRCNN(nn.Module):
     def __init__(self, afr_reduced_cnn_size):
         super(MRCNN, self).__init__()
@@ -219,13 +219,12 @@ class MultiHeadedAttention(nn.Module):
 
 class LayerNorm(nn.Module):
     "Construct a layer normalization module."
-
     def __init__(self, features, eps=1e-6):
         super(LayerNorm, self).__init__()
         # 创建两个可学习的模型参数 a_2 和 b_2，
         self.a_2 = nn.Parameter(torch.ones(features))
         self.b_2 = nn.Parameter(torch.zeros(features))
-        self.eps = eps   # eps代表为了避免出现零作为分母，添加的小正数值。
+        self.eps = eps  # eps代表为了避免出现零作为分母，添加的小正数值。
 
     def forward(self, x):
         mean = x.mean(-1, keepdim=True)  # 计算了输入张量 x 沿着最后一个维度（通常是特征维度）的均值。keepdim=True 参数确保结果具有与输入相同的维度。
@@ -234,13 +233,10 @@ class LayerNorm(nn.Module):
 
 
 class SublayerOutput(nn.Module):
-    '''
-    A residual connection followed by a layer norm.
-    '''
-
+    '''A residual connection followed by a layer norm. '''
     def __init__(self, size, dropout):
         super(SublayerOutput, self).__init__()
-        self.norm = LayerNorm(size)   # 层归一化是在特征维度上进行的
+        self.norm = LayerNorm(size)  # 层归一化是在特征维度上进行的
         self.dropout = nn.Dropout(dropout)
 
     def forward(self, x, sublayer):
@@ -278,6 +274,7 @@ class EncoderLayer(nn.Module):
     Made up of self-attention and a feed forward layer.
     Each of these sublayers have residual and layer norm, implemented by SublayerOutput.
     '''
+
     def __init__(self, size, self_attn, feed_forward, afr_reduced_cnn_size, dropout):
         super(EncoderLayer, self).__init__()
         self.self_attn = self_attn
@@ -285,7 +282,6 @@ class EncoderLayer(nn.Module):
         self.sublayer_output = clones(SublayerOutput(size, dropout), 2)
         self.size = size
         self.conv = CausalConv1d(afr_reduced_cnn_size, afr_reduced_cnn_size, kernel_size=7, stride=1, dilation=1)
-
 
     def forward(self, x_in):
         "Transformer Encoder"
@@ -308,13 +304,13 @@ class PositionwiseFeedForward(nn.Module):
         return self.w_2(self.dropout(F.relu(self.w_1(x))))
 
 
-class AttnSleep(nn.Module):
+class AttnSleep_2CH_S1(nn.Module):
     def __init__(self):
-        super(AttnSleep, self).__init__()
+        super(AttnSleep_2CH_S1, self).__init__()
 
         N = 2  # TCE模型的克隆数量
-        d_model = 80   # 用于表示模型中全连接层的神经元个数
-        d_ff = 120   # 前馈神经网络的维度，通常用于处理注意力层的输出
+        d_model = 160 # 用于表示模型中全连接层的神经元个数
+        d_ff = 120  # 前馈神经网络的维度，通常用于处理注意力层的输出
         h = 5  # 多头注意力机制中的注意力头的数量, 这里代表划分为子空间的个数
         dropout = 0.1  # 10%的丢弃率
         num_classes = 5
@@ -328,9 +324,15 @@ class AttnSleep(nn.Module):
         self.fc = nn.Linear(d_model * afr_reduced_cnn_size, num_classes)
 
     def forward(self, x):
-        x_feat = self.mrcnn(x)
-        # print("MRCNN输出的tensor维度{}".format(x_feat.shape))
-        encoded_features = self.tce(x_feat)
+        x_EEG = torch.unsqueeze(x[:, 0, :], 1)
+        x_EOG = torch.unsqueeze(x[:, 1, :], 1)
+
+        x_feat_EEG = self.mrcnn(x_EEG)
+        x_feat_EOG = self.mrcnn(x_EOG)
+        x_concat = torch.cat((x_feat_EEG, x_feat_EOG), dim=2)
+        # print("MRCNN输出的x_feat_EEG{}".format(x_concat.shape))
+
+        encoded_features = self.tce(x_concat)
         encoded_features = encoded_features.contiguous().view(encoded_features.shape[0], -1)
         final_output = self.fc(encoded_features)
         return final_output

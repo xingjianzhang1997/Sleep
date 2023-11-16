@@ -11,7 +11,6 @@
 
 import json
 from data_loader.data_loaders import *
-import model.model as module_arch
 from trainer import Trainer
 from utils.util import calc_class_weight
 import utils.metric as module_metric
@@ -19,6 +18,9 @@ import utils.loss as module_loss
 import torch
 import torch.nn as nn
 import torch.optim as optim
+
+import model.model as module_arch
+import model.model_2CH as module_arch_2CH
 
 
 # 为了可重复性，固定pytorch和numpy的随机种子
@@ -61,11 +63,16 @@ def main(fold_id):
     ams_grad = config["optimizer"]["args"]["ams_grad"]  # 修正Adam优化器
 
     # 构建AI模型和参数初始化
+    model = module_arch.AttnSleep()  # 默认模型
+
     if config['arch']['type'] == "AttnSleep":
         model = module_arch.AttnSleep()
-        model.apply(weights_init_normal)
+    elif config['arch']['type'] == "AttnSleep_2CH":
+        model = module_arch_2CH.AttnSleep_2CH()
     else:
-        print("当前选择的模型结构还未完成")
+        print("当前选择的模型结构还未完成，强制使用默认模型")
+
+    model.apply(weights_init_normal)
 
     # getattr用于获取对象的属性或方法
     criterion = getattr(module_loss, config['loss'])
@@ -98,7 +105,8 @@ def main(fold_id):
                       valid_data_loader=valid_data_loader,
                       class_weights=weights_for_each_class)
 
-    trainer.train(early_stop_fold=True)
+    early_stop_fold = config["early_stop_fold"]
+    trainer.train(early_stop_fold=early_stop_fold)
 
 
 if __name__ == '__main__':

@@ -114,7 +114,7 @@ checkpointPath = modelPath + modelNames[0] + "/checkpoint-epoch40.pth"
 
 name = checkpointPath.split("/")[6]
 # 数据保存地址
-savePath = "/home/xingjian.zhang/sleep/3_result/" + name
+savePath = "/home/xingjian.zhang/sleep/3_independent_result/" + name
 if not os.path.exists(savePath):
     os.makedirs(savePath)
 

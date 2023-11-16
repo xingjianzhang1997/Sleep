@@ -8,16 +8,16 @@
 
 from mne.io import read_raw_edf
 
-path = r"/home/xingjian.zhang/sleep/0_data/02_hospitalRawdata/ChengXiuYun.edf"
+path = r"/home/xingjian.zhang/sleep/0_data/00_sleepRawdata/sleep-telemetry/ST7011J0-PSG.edf"
 
 
 raw = read_raw_edf(path, preload=True, verbose=False, stim_channel=None)
 raw.plot()
 
+
 print(raw.info)
 print(raw.info.ch_names)
 
 
-
 # annot_data = read_annotations(ann_fnames[i])
-# raw_data.set_annotations(annot_data, emit_warning=False) 
+# raw_data.set_annotations(annot_data, emit_warning=False)

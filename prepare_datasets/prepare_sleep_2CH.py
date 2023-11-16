@@ -59,9 +59,11 @@ def main():
     EPOCH_SEC_SIZE = 30  # 30S 为一个epoch
 
     # 设置数据保存的
-    dataPath = '/home/xingjian.zhang/sleep/0_data/00_rawdata/sleep-telemetry/'
-    savePath = '/home/xingjian.zhang/sleep/0_data/01_npzdata/03_ST_EOG/'
-    select_ch = "EEG Fpz-Cz"  # EEG Fpz-Cz or EEG Pz-Oz
+    dataPath = '/home/xingjian.zhang/sleep/0_data/00_sleepRawdata/sleep-telemetry/'
+    savePath = '/home/xingjian.zhang/sleep/0_data/01_sleepNPZdata/04_ST_FPZ-Cz&EOG/'
+    select_EEG_ch = "EEG Fpz-Cz"  # EEG Fpz-Cz or EEG Pz-Oz
+    select_EOG_ch = "EOG horizontal"  # EOG horizontal or EMG submental
+    select_ch = [select_EEG_ch, select_EOG_ch]
 
     num_W_epoch = 0
     num_N1_epoch = 0
@@ -89,8 +91,7 @@ def main():
         raw = read_raw_edf(psg_fnames[i], preload=True, verbose=False, stim_channel=None)
         sampling_rate = raw.info['sfreq']
         raw_ch_df = raw.to_data_frame()[select_ch]
-        raw_ch_df = raw_ch_df.to_frame()  # 将数据转换为一个新的 DataFrame，以确保它是一个独立的 DataFrame 对象
-        raw_ch_df.set_index(np.arange(len(raw_ch_df)))  # 设置为一个新的整数索引，从0到 raw_ch_df 的长度减1
+        # raw_ch_df.set_index(np.arange(len(raw_ch_df)))  # 设置为一个新的整数索引，从0到 raw_ch_df 的长度减1
 
         # 只是为了获取ann的header信息，正确读取ann的函数是read_annotations
         warnings.filterwarnings("ignore", category=RuntimeWarning)  # 忽略 RuntimeWarning
