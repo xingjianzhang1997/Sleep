@@ -305,11 +305,12 @@ class PositionwiseFeedForward(nn.Module):
 
 
 class AttnSleep_2CH_S1(nn.Module):
+    """双通道（1个EEG+1个EOG）输入，分别通过MRCNN+AFR后合并，再共同输入TCE"""
     def __init__(self):
         super(AttnSleep_2CH_S1, self).__init__()
 
         N = 2  # TCE模型的克隆数量
-        d_model = 160 # 用于表示模型中全连接层的神经元个数
+        d_model = 160  # 用于表示TCE模型中全连接层的神经元个数
         d_ff = 120  # 前馈神经网络的维度，通常用于处理注意力层的输出
         h = 5  # 多头注意力机制中的注意力头的数量, 这里代表划分为子空间的个数
         dropout = 0.1  # 10%的丢弃率
@@ -334,5 +335,43 @@ class AttnSleep_2CH_S1(nn.Module):
 
         encoded_features = self.tce(x_concat)
         encoded_features = encoded_features.contiguous().view(encoded_features.shape[0], -1)
+        final_output = self.fc(encoded_features)
+        return final_output
+
+
+class AttnSleep_2CH_S2(nn.Module):
+    """双通道（1个EEG+1个EOG）输入,分别通过MRCNN+AFR+TCE后合并，再输入分类模块"""
+    def __init__(self):
+        super(AttnSleep_2CH_S2, self).__init__()
+
+        N = 2  # TCE模型的克隆数量
+        d_model = 80  # 用于表示TCE模型中全连接层的神经元个数
+        d_ff = 120  # 前馈神经网络的维度，通常用于处理注意力层的输出
+        h = 5  # 多头注意力机制中的注意力头的数量, 这里代表划分为子空间的个数
+        dropout = 0.1  # 10%的丢弃率
+        num_classes = 5
+        afr_reduced_cnn_size = 30  # SE block中的通道数
+
+        self.mrcnn = MRCNN(afr_reduced_cnn_size)
+        attn = MultiHeadedAttention(h, d_model, afr_reduced_cnn_size)
+        ff = PositionwiseFeedForward(d_model, d_ff, dropout)
+        self.tce = TCE(EncoderLayer(d_model, deepcopy(attn), deepcopy(ff), afr_reduced_cnn_size, dropout), N)
+
+        self.fc = nn.Linear(d_model * afr_reduced_cnn_size * 2, num_classes)
+
+    def forward(self, x):
+        x_EEG = torch.unsqueeze(x[:, 0, :], 1)
+        x_EOG = torch.unsqueeze(x[:, 1, :], 1)
+
+        x_feat_EEG = self.mrcnn(x_EEG)
+        x_feat_EOG = self.mrcnn(x_EOG)
+
+        encoded_features_EEG = self.tce(x_feat_EEG)
+        encoded_features_EEG = encoded_features_EEG.contiguous().view(encoded_features_EEG.shape[0], -1)
+
+        encoded_features_EOG = self.tce(x_feat_EOG)
+        encoded_features_EOG = encoded_features_EOG.contiguous().view(encoded_features_EOG.shape[0], -1)
+
+        encoded_features = torch.cat((encoded_features_EEG, encoded_features_EOG), dim=1)
         final_output = self.fc(encoded_features)
         return final_output

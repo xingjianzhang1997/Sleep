@@ -35,8 +35,8 @@ else:
     device = torch.device('cpu')
 
 
-# 参数初始化
 def weights_init_normal(m):
+    """模型的参数初始化"""
     if type(m) == nn.Conv2d:
         torch.nn.init.normal_(m.weight.data, 0.0, 0.02)
         # torch.nn.init.kaiming_uniform_
@@ -48,12 +48,29 @@ def weights_init_normal(m):
 
 
 def print_counts(data_count):
+    """打印样本量"""
     print("W期数据：{}".format(data_count[0]))
     print("N1期数据：{}".format(data_count[1]))
     print("N2期数据：{}".format(data_count[2]))
     print("N3期数据：{}".format(data_count[3]))
     print("REM期数据：{}".format(data_count[4]))
     print("所有数据总量：{}".format(sum(data_count)))
+
+
+def select_model(name):
+    """选择使用的模型"""
+    model = module_arch.AttnSleep()  # 默认模型
+
+    if name == "AttnSleep":
+        model = module_arch.AttnSleep()
+    elif name == "AttnSleep_2CH_S1":
+        model = module_arch_2CH.AttnSleep_2CH_S1()
+    elif name == "AttnSleep_2CH_S2":
+        model = module_arch_2CH.AttnSleep_2CH_S2()
+    else:
+        print("当前选择的模型结构还未完成，强制使用默认模型")
+
+    return model
 
 
 def main(fold_id):
@@ -63,15 +80,8 @@ def main(fold_id):
     ams_grad = config["optimizer"]["args"]["ams_grad"]  # 修正Adam优化器
 
     # 构建AI模型和参数初始化
-    model = module_arch.AttnSleep()  # 默认模型
-
-    if config['arch']['type'] == "AttnSleep":
-        model = module_arch.AttnSleep()
-    elif config['arch']['type'] == "AttnSleep_2CH":
-        model = module_arch_2CH.AttnSleep_2CH()
-    else:
-        print("当前选择的模型结构还未完成，强制使用默认模型")
-
+    model_name = config['arch']['type']
+    model = select_model(model_name)
     model.apply(weights_init_normal)
 
     # getattr用于获取对象的属性或方法

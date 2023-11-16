@@ -37,9 +37,10 @@ class BaseTrainer:
 
         # 数据保存地址
         self.save_dir = config['trainer']['save_dir']
-        self.exper_name = self.config['name']
+        self.exper_name = config['name']
+        self.model_name = config['arch']['type']
         run_id = datetime.now().strftime('%d_%m_%Y_%H_%M') + "_fold" + str(fold_id)
-        self.checkpoint_dir = self.save_dir + "/" + self.exper_name + "/" + run_id + "/"
+        self.checkpoint_dir = self.save_dir + "/" + self.exper_name + "/" + self.model_name + "/" + run_id + "/"
         os.makedirs(self.checkpoint_dir, exist_ok=True)  # 创建目录，如果不存在
 
         # 设置使用的GPU

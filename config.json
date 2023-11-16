@@ -7,7 +7,7 @@
     "device": 0,
 
     "arch": {
-        "type": "AttnSleep_2CH_S1",
+        "type": "AttnSleep_2CH_S2",
         "args": {
         }
     },

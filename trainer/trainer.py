@@ -22,8 +22,6 @@ class Trainer(BaseTrainer):
         super().__init__(model, criterion, metric_ftns, optimizer, config, fold_id, data_count)
         self.config = config
         self.data_loader = data_loader
-        self.len_epoch = len(self.data_loader)
-
         self.valid_data_loader = valid_data_loader
         self.do_validation = self.valid_data_loader is not None
 
@@ -59,13 +57,6 @@ class Trainer(BaseTrainer):
             self.train_metrics.update('loss', loss.item())
             for met in self.metric_ftns:
                 self.train_metrics.update(met.__name__, met(output, label))
-
-            if batch_idx == self.len_epoch:
-                break
-
-        # 打印当前epoch的学习率
-        # current_lr = self.optimizer.param_groups[0]['lr']
-        # print(f"Epoch {epoch}, Current Learning Rate: {current_lr}")
 
         # 在每个epoch结束后更新学习率调度器
         self.scheduler.step()
