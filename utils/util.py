@@ -6,10 +6,7 @@
 4.Others：This is a temporary script file.
 """
 
-import json
-from pathlib import Path
-from collections import OrderedDict
-from itertools import repeat
+
 import pandas as pd
 import math
 

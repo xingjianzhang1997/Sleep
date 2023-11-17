@@ -1,7 +1,7 @@
 import torch
 import matplotlib.pyplot as plt
 
-readPath = "/home/xingjian.zhang/sleep/3_result/00_SC_FPZ-Cz_model/ChengXiuYun_C4-M1_confusion_matrix.torch"
+readPath = "/home/xingjian.zhang/sleep/4_save/04_ST_FPZ-Cz&EOG/AttnSleep_2CH_S3_1/04_ST_FPZ-Cz&EOG_confusion_matrix.torch"
 
 # Load the confusion matrix
 confusion_matrix = torch.load(readPath)

@@ -21,6 +21,7 @@ import torch.optim as optim
 
 import model.model as module_arch
 import model.model_2CH as module_arch_2CH
+import model.model_2CH_1 as module_arch_2CH_1
 
 
 # 为了可重复性，固定pytorch和numpy的随机种子
@@ -60,14 +61,19 @@ def print_counts(data_count):
 def select_model(name):
     """选择使用的模型"""
     model = module_arch.AttnSleep()  # 默认模型
-
-    if name == "AttnSleep":
-        model = module_arch.AttnSleep()
-    elif name == "AttnSleep_2CH_S1":
-        model = module_arch_2CH.AttnSleep_2CH_S1()
-    elif name == "AttnSleep_2CH_S2":
-        model = module_arch_2CH.AttnSleep_2CH_S2()
-    else:
+    # 存储对应的键值对
+    model_map = {
+        "AttnSleep": module_arch.AttnSleep(),
+        "AttnSleep_2CH_S1": module_arch_2CH.AttnSleep_2CH_S1(),
+        "AttnSleep_2CH_S2": module_arch_2CH.AttnSleep_2CH_S2(),
+        "AttnSleep_2CH_S3": module_arch_2CH.AttnSleep_2CH_S3(),
+        "AttnSleep_2CH_S1_1": module_arch_2CH_1.AttnSleep_2CH_S1(),
+        "AttnSleep_2CH_S2_1": module_arch_2CH_1.AttnSleep_2CH_S2(),
+        "AttnSleep_2CH_S3_1": module_arch_2CH_1.AttnSleep_2CH_S3(),
+    }
+    try:
+        model = model_map[name]
+    except KeyError:
         print("当前选择的模型结构还未完成，强制使用默认模型")
 
     return model

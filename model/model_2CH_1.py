@@ -1,10 +1,9 @@
-# -*- coding: utf-8 -*-
 """
 1.Function：AI模型结构
 2.Author：xingjian.zhang
 3.Time：20231116
 4.Others：(1) 来源：《AttnSleep: An Attention-based Deep Learning Approach for Sleep Stage Classification with Single-Channel EEG》.
-          (2) 原单通道的AI网络模型结构修改为双通道（1个EEG+1个EOG）输入, 但是是同一个模型结构，依次通过。
+          (2) 原单通道的AI网络模型结构修改为双通道（1个EEG+1个EOG）输入, 模型结构生成两个，让模型参数不同用。
 """
 
 import torch
@@ -148,7 +147,21 @@ class MRCNN_2CH(nn.Module):
         super(MRCNN_2CH, self).__init__()
         drate = 0.5
         self.GELU = GELU()
-        self.features1 = nn.Sequential(
+        self.features1_EEG = nn.Sequential(
+            nn.Conv1d(1, 64, kernel_size=50, stride=6, bias=False, padding=24),
+            nn.BatchNorm1d(64),
+            self.GELU,
+            nn.MaxPool1d(kernel_size=8, stride=2, padding=4),
+            nn.Dropout(drate),
+            nn.Conv1d(64, 128, kernel_size=8, stride=1, bias=False, padding=4),
+            nn.BatchNorm1d(128),
+            self.GELU,
+            nn.Conv1d(128, 128, kernel_size=8, stride=1, bias=False, padding=4),
+            nn.BatchNorm1d(128),
+            self.GELU,
+            nn.MaxPool1d(kernel_size=4, stride=4, padding=2)
+        )
+        self.features1_EOG = nn.Sequential(
             nn.Conv1d(1, 64, kernel_size=50, stride=6, bias=False, padding=24),
             nn.BatchNorm1d(64),
             self.GELU,
@@ -163,7 +176,7 @@ class MRCNN_2CH(nn.Module):
             nn.MaxPool1d(kernel_size=4, stride=4, padding=2)
         )
 
-        self.features2 = nn.Sequential(
+        self.features2_EEG = nn.Sequential(
             nn.Conv1d(1, 64, kernel_size=400, stride=50, bias=False, padding=200),
             nn.BatchNorm1d(64),
             self.GELU,
@@ -177,6 +190,21 @@ class MRCNN_2CH(nn.Module):
             self.GELU,
             nn.MaxPool1d(kernel_size=2, stride=2, padding=1)
         )
+        self.features2_EOG = nn.Sequential(
+            nn.Conv1d(1, 64, kernel_size=400, stride=50, bias=False, padding=200),
+            nn.BatchNorm1d(64),
+            self.GELU,
+            nn.MaxPool1d(kernel_size=4, stride=2, padding=2),
+            nn.Dropout(drate),
+            nn.Conv1d(64, 128, kernel_size=7, stride=1, bias=False, padding=3),
+            nn.BatchNorm1d(128),
+            self.GELU,
+            nn.Conv1d(128, 128, kernel_size=7, stride=1, bias=False, padding=3),
+            nn.BatchNorm1d(128),
+            self.GELU,
+            nn.MaxPool1d(kernel_size=2, stride=2, padding=1)
+        )
+
         self.dropout = nn.Dropout(drate)
         self.inplanes = 128
         self.AFR = self._make_layer(SEBasicBlock, afr_reduced_cnn_size, 1)
@@ -202,12 +230,12 @@ class MRCNN_2CH(nn.Module):
         x_EEG = torch.unsqueeze(x[:, 0, :], 1)
         x_EOG = torch.unsqueeze(x[:, 1, :], 1)
 
-        x1_EEG = self.features1(x_EEG)
-        x2_EEG = self.features2(x_EEG)
+        x1_EEG = self.features1_EEG(x_EEG)
+        x2_EEG = self.features2_EEG(x_EEG)
         x_concat_EEG = torch.cat((x1_EEG, x2_EEG), dim=2)
 
-        x1_EOG = self.features1(x_EOG)
-        x2_EOG = self.features2(x_EOG)
+        x1_EOG = self.features1_EOG(x_EOG)
+        x2_EOG = self.features2_EOG(x_EOG)
         x_concat_EOG = torch.cat((x1_EOG, x2_EOG), dim=2)
 
         x_concat = torch.cat((x_concat_EEG, x_concat_EOG), dim=2)
@@ -386,7 +414,8 @@ class AttnSleep_2CH_S1(nn.Module):
         num_classes = 5
         afr_reduced_cnn_size = 30  # SE block中的通道数
 
-        self.mrcnn = MRCNN(afr_reduced_cnn_size)
+        self.mrcnn_EEG = MRCNN(afr_reduced_cnn_size)
+        self.mrcnn_EOG = MRCNN(afr_reduced_cnn_size)
         attn = MultiHeadedAttention(h, d_model, afr_reduced_cnn_size)
         ff = PositionwiseFeedForward(d_model, d_ff, dropout)
         self.tce = TCE(EncoderLayer(d_model, deepcopy(attn), deepcopy(ff), afr_reduced_cnn_size, dropout), N)
@@ -397,8 +426,8 @@ class AttnSleep_2CH_S1(nn.Module):
         x_EEG = torch.unsqueeze(x[:, 0, :], 1)
         x_EOG = torch.unsqueeze(x[:, 1, :], 1)
 
-        x_feat_EEG = self.mrcnn(x_EEG)
-        x_feat_EOG = self.mrcnn(x_EOG)
+        x_feat_EEG = self.mrcnn_EEG(x_EEG)
+        x_feat_EOG = self.mrcnn_EOG(x_EOG)
         x_concat = torch.cat((x_feat_EEG, x_feat_EOG), dim=2)
         # print("MRCNN输出的x_feat_EEG{}".format(x_concat.shape))
 
@@ -421,10 +450,12 @@ class AttnSleep_2CH_S2(nn.Module):
         num_classes = 5
         afr_reduced_cnn_size = 30  # SE block中的通道数
 
-        self.mrcnn = MRCNN(afr_reduced_cnn_size)
+        self.mrcnn_EEG = MRCNN(afr_reduced_cnn_size)
+        self.mrcnn_EOG = MRCNN(afr_reduced_cnn_size)
         attn = MultiHeadedAttention(h, d_model, afr_reduced_cnn_size)
         ff = PositionwiseFeedForward(d_model, d_ff, dropout)
-        self.tce = TCE(EncoderLayer(d_model, deepcopy(attn), deepcopy(ff), afr_reduced_cnn_size, dropout), N)
+        self.tce_EEG = TCE(EncoderLayer(d_model, deepcopy(attn), deepcopy(ff), afr_reduced_cnn_size, dropout), N)
+        self.tce_EOG = TCE(EncoderLayer(d_model, deepcopy(attn), deepcopy(ff), afr_reduced_cnn_size, dropout), N)
 
         self.fc = nn.Linear(d_model * afr_reduced_cnn_size * 2, num_classes)
 
@@ -432,13 +463,13 @@ class AttnSleep_2CH_S2(nn.Module):
         x_EEG = torch.unsqueeze(x[:, 0, :], 1)
         x_EOG = torch.unsqueeze(x[:, 1, :], 1)
 
-        x_feat_EEG = self.mrcnn(x_EEG)
-        x_feat_EOG = self.mrcnn(x_EOG)
+        x_feat_EEG = self.mrcnn_EEG(x_EEG)
+        x_feat_EOG = self.mrcnn_EOG(x_EOG)
 
-        encoded_features_EEG = self.tce(x_feat_EEG)
+        encoded_features_EEG = self.tce_EEG(x_feat_EEG)
         encoded_features_EEG = encoded_features_EEG.contiguous().view(encoded_features_EEG.shape[0], -1)
 
-        encoded_features_EOG = self.tce(x_feat_EOG)
+        encoded_features_EOG = self.tce_EOG(x_feat_EOG)
         encoded_features_EOG = encoded_features_EOG.contiguous().view(encoded_features_EOG.shape[0], -1)
 
         encoded_features = torch.cat((encoded_features_EEG, encoded_features_EOG), dim=1)

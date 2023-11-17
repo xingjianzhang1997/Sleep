@@ -1,26 +1,14 @@
-"""完成N折的训练验证后，统计模型的平均结果"""
-import os
-import numpy as np
+from torch.utils.tensorboard import SummaryWriter
 
-all_pres = []
-all_labels = []
-pres_list = []
-labels_list = []
-save_dir = "/home/xingjian.zhang/sleep/4_save/04_ST_FPZ-Cz&EOG/AttnSleep_2CH_S1/16_11_2023_12_12_fold9"
-for root, dirs, files in os.walk(save_dir):
-    for file in files:
-        if "pres" in file:
-            pres_list.append(os.path.join(root, file))
-        if "labels" in file:
-            labels_list.append(os.path.join(root, file))
+# 创建编辑器，保存日志，指令保存路径log_dir
+writer = SummaryWriter(log_dir="./logs_tensorboard")  # 指定保存位置
 
-print("最终结果由 {}折 组成".format(len(pres_list)))
+# y = 2 * x
+for i in range(100):
+    # 添加标题，x轴，y轴
+    # tag: 标题名， scalar_value: y轴， global_step: x轴
+    writer.add_scalar(tag="y=2x", scalar_value=2*1, global_step=i)
 
-for i in range(len(pres_list)):
-    all_pres.extend(np.load(pres_list[i]))
-    all_labels.extend(np.load(labels_list[i]))
+# 关闭
+writer.close()
 
-all_labels = np.array(all_labels).astype(int)
-all_pres = np.array(all_pres).astype(int)
-
-print("OK")
