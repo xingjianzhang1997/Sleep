@@ -104,6 +104,7 @@ def load_folds_data_sleep(np_data_path, n_folds):
 
 def load_folds_data_apples(np_data_path, n_folds):
     """apples数据集的加载"""
+    print("读取文件地址: {}".format(np_data_path))
     files = sorted(glob(os.path.join(np_data_path, "*.npz")))
     print("npz文件的数量：{}".format(len(files)))
     # 将文件路径对按照交叉验证（cross-validation）的方式划分为不同的训练集和验证集
@@ -114,3 +115,4 @@ def load_folds_data_apples(np_data_path, n_folds):
         training_files = list(set(files) - set(subject_files))
         folds_data[fold_id] = [training_files, subject_files]  # 以10折为例，每1次实验都是前9个fold是训练，最后1个fold是验证。
     return folds_data
+

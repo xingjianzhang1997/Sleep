@@ -1,9 +1,8 @@
-# -*- coding: utf-8 -*-
 """
 1.Function：生成训练数据
 2.Author：xingjian.zhang
-3.Time：20230918-0920
-4.Others：清洗不需要的数据，把剩余的数据和标签合并，处理为30S的epoch片段，存为npz文件.
+3.Time：20231117
+4.Others：在原有基础上，从2通道变为3通道数据。
 """
 
 import glob
@@ -59,12 +58,13 @@ def main():
 
     EPOCH_SEC_SIZE = 30  # 30S 为一个epoch
 
-    # 设置数据保存的地址与名称
-    # dataPath = '/home/xingjian.zhang/sleep/0_data/00_sleepRawdata/sleep-telemetry/'
-    # savePath = '/home/xingjian.zhang/sleep/0_data/01_sleepNPZdata/05_ST_EMG/'
-    dataPath = '/home/xingjian.zhang/sleep/0_data/00_sleepRawdata/sleep-cassette/'
-    savePath = '/home/xingjian.zhang/sleep/0_data/01_sleepNPZdata/06_SC_EMG/'
-    select_ch = "EMG submental"  # EOG horizontal or EMG submental or EEG Pz-Oz or EEG Fpz-Cz
+    # 设置数据保存的
+    dataPath = '/home/xingjian.zhang/sleep/0_data/00_sleepRawdata/sleep-telemetry/'
+    savePath = '/home/xingjian.zhang/sleep/0_data/01_sleepNPZdata/06_ST_FPZ-Cz&EOG&EMG/'
+    select_EEG_ch = "EEG Fpz-Cz"  # EEG Fpz-Cz or EEG Pz-Oz
+    select_EOG_ch = "EOG horizontal"  # EOG horizontal or EMG submental
+    select_EMG_ch = "EMG submental"
+    select_ch = [select_EEG_ch, select_EOG_ch, select_EMG_ch]
 
     num_W_epoch = 0
     num_N1_epoch = 0
@@ -92,8 +92,7 @@ def main():
         raw = read_raw_edf(psg_fnames[i], preload=True, verbose=False, stim_channel=None)
         sampling_rate = raw.info['sfreq']
         raw_ch_df = raw.to_data_frame()[select_ch]
-        raw_ch_df = raw_ch_df.to_frame()  # 将数据转换为一个新的 DataFrame，以确保它是一个独立的 DataFrame 对象
-        raw_ch_df.set_index(np.arange(len(raw_ch_df)))  # 设置为一个新的整数索引，从0到 raw_ch_df 的长度减1
+        # raw_ch_df.set_index(np.arange(len(raw_ch_df)))  # 设置为一个新的整数索引，从0到 raw_ch_df 的长度减1
 
         # 只是为了获取ann的header信息，正确读取ann的函数是read_annotations
         warnings.filterwarnings("ignore", category=RuntimeWarning)  # 忽略 RuntimeWarning
@@ -240,7 +239,8 @@ def main():
     labels = ['stage_W', 'stage_N1', 'stage_N2', 'stage_N3/4', 'stage_REM']
     colors = ['gold', 'yellowgreen', 'lightcoral', 'lightskyblue', 'lightgreen']
     plt.pie(sizes, labels=labels, colors=colors, autopct=make_autopct(sizes))
-    plt.title("Sleep-EDF SC set")
+    title_name = dataPath.split("/")[6]
+    plt.title(title_name)
     plt.show()
 
 

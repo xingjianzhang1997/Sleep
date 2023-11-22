@@ -61,7 +61,7 @@ def checkTime(timeEDF, timeAnn):
 
     if timeEDF == timeAnn:
         flag = 0
-        print("EDF和标签时间一致，不需要额外处理")
+        # print("EDF和标签时间一致，不需要额外处理")
     elif timeEDF < timeAnn:
         flag = 1
         timeDifference = timeAnn - timeEDF
@@ -114,16 +114,24 @@ def combineEDFandAnnot(path):
         print("*****正在处理的文件编号：{} *****".format(i))
         print("正在处理的文件地址：{}".format(psgFiles[i]))
         print("正在处理的文件地址：{}".format(annotFiles[i]))
-        rawdata = read_raw_edf(psgFiles[i], preload=True, verbose=False, stim_channel=None)
-        sampling_rate = int(rawdata.info['sfreq'])
-        if sampling_rate != 100:
-            list_200HZ.append(i)
+
+        try:
+            rawdata = read_raw_edf(psgFiles[i], preload=True, verbose=False, stim_channel=None)
+            sampling_rate = int(rawdata.info['sfreq'])
+
+            # 跳过采样率为200Hz
+            if sampling_rate != 100:
+                list_200HZ.append(i)
+                continue
+
+            raw_startTime = str(rawdata.info['meas_date']).split(" ")[1]
+            raw_startTime = raw_startTime.split("+")[0]
+            raw_ch_df = rawdata.to_data_frame()[select_ch]
+            raw_ch_df = raw_ch_df.to_frame()  # 将数据转换为一个新的 DataFrame，以确保它是一个独立的 DataFrame 对象.
+            raw_ch_df.set_index(np.arange(len(raw_ch_df)))  # 设置为一个新的整数索引.
+        except Exception as e:
+            print(f"发生异常: {e}")
             continue
-        raw_startTime = str(rawdata.info['meas_date']).split(" ")[1]
-        raw_startTime = raw_startTime.split("+")[0]
-        raw_ch_df = rawdata.to_data_frame()[select_ch]
-        raw_ch_df = raw_ch_df.to_frame()  # 将数据转换为一个新的 DataFrame，以确保它是一个独立的 DataFrame 对象.
-        raw_ch_df.set_index(np.arange(len(raw_ch_df)))  # 设置为一个新的整数索引.
 
         annotdata = readAnnotFiles(annotFiles[i])  # 类型是frame
         ann_startTime = annotdata.iloc[0, 1]
@@ -219,9 +227,16 @@ def combineEDFandAnnot(path):
     plt.show()
 
 if __name__ == "__main__":
+
+    select_ch = "ROC-M1"  # ECG, C3_M2, C4_M1, O1_M2, O2_M1
+
     filePath = "/home/xingjian.zhang/sleep/0_data/04_applesRawdata"
     savePath = "/home/xingjian.zhang/sleep/0_data/05_applesNPZdata"
-    select_ch = "C4_M1"  # ECG, C3_M2, C4_M1, O1_M2, O2_M1
+    savePath = savePath + "/" + select_ch
+
+    if not os.path.exists(savePath):
+        os.makedirs(savePath)
+
     EPOCH_SEC_SIZE = 30
     combineEDFandAnnot(filePath)
 

@@ -1,13 +1,13 @@
 {
-    "name": "04_ST_FPZ-Cz&EOG",
+    "name": "Apples_ROC",
 
-    "npz_file": "/home/xingjian.zhang/sleep/0_data/01_sleepNPZdata/",
+    "npz_file": "/home/xingjian.zhang/sleep/0_data/05_applesNPZdata/",
 
     "n_gpu": 1,
     "device": 0,
 
     "arch": {
-        "type": "AttnSleep_2CH_S3_1",
+        "type": "AttnSleep",
         "args": {
         }
     },
@@ -35,7 +35,7 @@
 
     "loss": "weighted_CrossEntropyLoss",
 
-    "early_stop_fold": false,
+    "early_stop_fold": true,
 
     "metrics": [
         "accuracy"
@@ -47,7 +47,7 @@
     "trainer": {
         "epochs": 50,
         "save_dir": "../4_save/",
-        "save_period": 25,
+        "save_period": 50,
         "verbosity": 1,
         "monitor": "loss"
     }

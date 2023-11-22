@@ -22,7 +22,7 @@ import torch.optim as optim
 import model.model as module_arch
 import model.model_2CH as module_arch_2CH
 import model.model_2CH_1 as module_arch_2CH_1
-
+import model.model_3CH as module_arch_3CH
 
 # 为了可重复性，固定pytorch和numpy的随机种子
 SEED = 123
@@ -70,6 +70,8 @@ def select_model(name):
         "AttnSleep_2CH_S1_1": module_arch_2CH_1.AttnSleep_2CH_S1(),
         "AttnSleep_2CH_S2_1": module_arch_2CH_1.AttnSleep_2CH_S2(),
         "AttnSleep_2CH_S3_1": module_arch_2CH_1.AttnSleep_2CH_S3(),
+        "AttnSleep_3CH_S2": module_arch_3CH.AttnSleep_3CH_S2(),
+        "AttnSleep_3CH_S2_1": module_arch_3CH.AttnSleep_3CH_S2_1(),
     }
     try:
         model = model_map[name]
@@ -133,15 +135,14 @@ if __name__ == '__main__':
     npz_file = config["npz_file"] + config["name"]
     num_folds = config["data_loader"]["args"]["num_folds"]
 
-    flag_weights_loss = False  # loss训练是否使用类别感知。
+    flag_weights_loss = True  # loss训练是否使用类别感知。
     
     # 将npz数据全部读取，并且划分为num_folds组数据.
-    if "sleep" in config["npz_file"]:
-        folds_data = load_folds_data_sleep(npz_file, num_folds)
-    elif "apples" in config["npz_file"]:
+    if "apples" in config["npz_file"]:
         folds_data = load_folds_data_apples(npz_file, num_folds)
     else:
-        print("数据加载方式不匹配")
+        print("按照sleep数据集的方式加载数据")
+        folds_data = load_folds_data_sleep(npz_file, num_folds)
 
     # 10折交叉验证
     for cur_fold_id in range(num_folds):

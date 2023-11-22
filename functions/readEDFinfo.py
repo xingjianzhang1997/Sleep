@@ -8,7 +8,7 @@
 
 from mne.io import read_raw_edf
 
-path = r"/home/xingjian.zhang/sleep/0_data/00_sleepRawdata/sleep-telemetry/ST7011J0-PSG.edf"
+path = "/home/xingjian.zhang/sleep/0_data/04_applesRawdata/apples-570317.edf"
 
 
 raw = read_raw_edf(path, preload=True, verbose=False, stim_channel=None)
