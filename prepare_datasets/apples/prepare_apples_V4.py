@@ -2,7 +2,10 @@
 1.Function：读取annot标签数据和EDF数据合并，数据清洗和数据存储.
 2.Author：xingjian.zhang
 3.Time：20231120
-4.Others：在原基础上，同时生成不同通道的NPZ数据.
+4.Others：V1：生成1个单通道的NPZ数据。
+         V2：生成不同通道的NPZ数据。
+         V3：生成不同通道的多模态NPZ数据。
+         V4：生成三通道的多模态的NPZ数据。
 """
 
 import os
@@ -61,7 +64,8 @@ def checkTime(time_edf, time_ann):
         time_ann += timedelta(days=1)
 
     if time_edf == time_ann:
-        print("EDF和标签时间一致，不需要额外处理")
+        # print("EDF和标签时间一致，不需要额外处理")
+        pass
     elif time_edf < time_ann:
         timeDifference = time_ann - time_edf
         differentSecond = timeDifference.total_seconds()
@@ -80,8 +84,6 @@ def checkTime(time_edf, time_ann):
 
 def cleanData(rawdata, labels, data_idx, select_ch, sampling_rate):
     raw_ch_df = rawdata.to_data_frame()[select_ch]
-    raw_ch_df = raw_ch_df.to_frame()  # 将数据转换为一个新的 DataFrame，以确保它是一个独立的 DataFrame 对象.
-    raw_ch_df.set_index(np.arange(len(raw_ch_df)))  # 设置为一个新的整数索引.
 
     # 可能存在结尾EDF数据比标签数据短的情况（数据损坏导致的？）
     if data_idx[-1] > len(raw_ch_df) - 1:
@@ -139,8 +141,11 @@ def combineEDFandAnnot(path):
     list_200HZ = []
 
     for i in range(numFiles):
+        if i < 500:
+            continue
+
         del_list = [597, 598, 909, 912, 913, 920]
-        if 315 < i < 326 or 882 < i < 885 or i in del_list:
+        if 315 < i < 326 or 882 < i < 886 or i in del_list:
             continue
         # i==316~325 因为这一段没有'C4_M1'，597/598没有O1_M2, 883-885/909/912/913/920 没有ROC,
 
@@ -176,7 +181,7 @@ def combineEDFandAnnot(path):
         for j in range(len(select_ch_list)):
             select_ch = select_ch_list[j]
 
-            savePath_ch = savePath + "/" + select_ch
+            savePath_ch = savePath + "/" + "Apples_" + select_ch[0] + "_" + select_ch[1] + "_" + select_ch[2]
             if not os.path.exists(savePath_ch):
                 os.makedirs(savePath_ch)
 
@@ -216,7 +221,7 @@ def combineEDFandAnnot(path):
     plt.show()
 
 if __name__ == "__main__":
-    select_ch_list = ["ROC", "LOC"]  # ECG, C3_M2, C4_M1, O1_M2, O2_M1
+    select_ch_list = [["C3_M2", "ROC", "LOC"]]
     filePath = "/home/xingjian.zhang/sleep/0_data/04_applesRawdata"
     savePath = "/home/xingjian.zhang/sleep/0_data/05_applesNPZdata"
     EPOCH_SEC_SIZE = 30

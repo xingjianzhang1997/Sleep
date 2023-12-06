@@ -6,31 +6,35 @@
 """
 
 import torch
-from torch.utils.data import Dataset
+from torch.utils.data import Dataset, DataLoader
+from torch.utils.data import IterableDataset
 import numpy as np
 import os
 from glob import glob
 
 
-class LoadDataset_from_numpy(Dataset):
-
+class MapDataset(Dataset):
+    """Map式数据集: 将整个数据集读取到内存中，通过index映射的方式读取对应的数据，优点速度快，缺点占用内存，大的数据集是无法使用。"""
     def __init__(self, np_dataset):
-        super(LoadDataset_from_numpy, self).__init__()
-        # load files
+        super(MapDataset, self).__init__()
         X_train = np.load(np_dataset[0])["x"]
         y_train = np.load(np_dataset[0])["y"]
 
+        num = 0
         for np_file in np_dataset[1:]:
+            num = num + 1
+            print("完成加载的npz文件数量:{}".format(num))
+
             X_train = np.vstack((X_train, np.load(np_file)["x"]))  # np.vstack垂直堆叠这两个数组
             y_train = np.append(y_train, np.load(np_file)["y"])
 
         self.len = X_train.shape[0]
         self.x_data = torch.from_numpy(X_train)
-        self.y_data = torch.from_numpy(y_train).long()  # 用于将张量的数据类型转换为64位整数（long）
+        self.y_data = torch.from_numpy(y_train).long()
 
-        # Correcting the shape of input to be (Batch_size, #channels, seq_len) where #channels=1
+        # 保证input是 (sampple_size, #channels, seq_len)
         if len(self.x_data.shape) == 3:
-            if self.x_data.shape[1] != 1:
+            if self.x_data.shape[1] != 1:  # 通常x_data.shape[1]是epoch*frequency，并不是1
                 self.x_data = self.x_data.permute(0, 2, 1)
         else:
             self.x_data = self.x_data.unsqueeze(1)
@@ -42,27 +46,21 @@ class LoadDataset_from_numpy(Dataset):
         return self.len
 
 
-def data_generator_np(training_files, subject_files, batch_size):
-    train_dataset = LoadDataset_from_numpy(training_files)
-    test_dataset = LoadDataset_from_numpy(subject_files)
+def data_generator_np(train_files, test_files, batch_size):
 
-    # 计算每一类别的样本总数量（含训练+测试）
+    train_dataset = MapDataset(train_files)  # train_files是文件地址
+    test_dataset = MapDataset(test_files)
+
+    # 计算每一类别的样本总数量（含训练+测试），这里有可改进的地方，因为counts同时被用来计算类别感知loss的权重了。
     all_ys = np.concatenate((train_dataset.y_data, test_dataset.y_data))
     all_ys = all_ys.tolist()  # 用于将pytorch的张量值转换为常规的Python列表
     num_classes = len(np.unique(all_ys))
-    counts = [all_ys.count(i) for i in range(num_classes)] 
+    counts = [all_ys.count(i) for i in range(num_classes)]
 
-    train_loader = torch.utils.data.DataLoader(dataset=train_dataset,
-                                               batch_size=batch_size,
-                                               shuffle=True,
-                                               drop_last=False,   # 意味最后一个batch如果数据不足时不会被舍弃
-                                               num_workers=0)
-
-    test_loader = torch.utils.data.DataLoader(dataset=test_dataset,
-                                              batch_size=batch_size,
-                                              shuffle=False,
-                                              drop_last=False,
-                                              num_workers=0)
+    train_loader = DataLoader(dataset=train_dataset, batch_size=batch_size, shuffle=True, drop_last=True,
+                              num_workers=0)
+    test_loader = DataLoader(dataset=test_dataset, batch_size=batch_size, shuffle=False, drop_last=False,
+                             num_workers=0)
 
     return train_loader, test_loader, counts
 
@@ -106,6 +104,8 @@ def load_folds_data_apples(np_data_path, n_folds):
     """apples数据集的加载"""
     print("读取文件地址: {}".format(np_data_path))
     files = sorted(glob(os.path.join(np_data_path, "*.npz")))
+    temp_idx = 500
+    files = files[0:temp_idx]
     print("npz文件的数量：{}".format(len(files)))
     # 将文件路径对按照交叉验证（cross-validation）的方式划分为不同的训练集和验证集
     train_files = np.array_split(files, n_folds)

@@ -100,20 +100,15 @@ def main(fold_id):
     trainable_params = filter(lambda p: p.requires_grad, model.parameters())
     optimizer = optim.Adam(trainable_params, lr=learning_rate, weight_decay=weight_decay, amsgrad=ams_grad)
 
+    print("当前fold的编号：{} （从0开始）".format(fold_id))
     data_loader, valid_data_loader, data_count = data_generator_np(folds_data[fold_id][0],
                                                                    folds_data[fold_id][1], batch_size)
 
-    print("当前fold的编号：{} （从0开始）".format(fold_id))
-    print_counts(data_count)
-
-    print("*****开始训练*****")
+    weights_for_each_class = [0.2, 0.2, 0.2, 0.2, 0.2]  # 为了不改变后续代码结构，直接让每个类别的权重都一样
     if flag_weights_loss:
-        print("使用类别感知loss")
+        print("***使用类别感知loss开始训练***")
         weights_for_each_class = calc_class_weight(data_count)
-    else:
-        print("不使用类别感知loss")
-        # 为了不改变后续代码结构，直接让每个类别的权重都一样
-        weights_for_each_class = [0.2, 0.2, 0.2, 0.2, 0.2]
+        print("通过公式计算的权重分布：{}".format(weights_for_each_class))
 
     trainer = Trainer(model, criterion, metrics, optimizer,
                       config=config,
@@ -139,7 +134,8 @@ if __name__ == '__main__':
     
     # 将npz数据全部读取，并且划分为num_folds组数据.
     if "apples" in config["npz_file"]:
-        folds_data = load_folds_data_apples(npz_file, num_folds)
+        print("按照apples数据集的方式加载数据")
+        folds_data = load_folds_data_apples(npz_file, num_folds)   # folds_data存的是划分为N折的“每个文件的路径”。
     else:
         print("按照sleep数据集的方式加载数据")
         folds_data = load_folds_data_sleep(npz_file, num_folds)

@@ -364,8 +364,8 @@ class AttnSleep_3CH_S2_1(nn.Module):
         self.tce_EEG = TCE(EncoderLayer(d_model, deepcopy(attn), deepcopy(ff), afr_reduced_cnn_size, dropout), N)
         self.tce_EOG = TCE(EncoderLayer(d_model, deepcopy(attn), deepcopy(ff), afr_reduced_cnn_size, dropout), N)
 
-        self.fc1 = nn.Linear(d_model * afr_reduced_cnn_size * 3, d_model * 3)
-        self.fc2 = nn.Linear(d_model * 3, num_classes)
+        self.fc1 = nn.Linear(d_model * afr_reduced_cnn_size * 3, d_model)
+        self.fc2 = nn.Linear(d_model, num_classes)
 
     def forward(self, x):
         x_EEG = torch.unsqueeze(x[:, 0, :], 1)

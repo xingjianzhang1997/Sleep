@@ -1,5 +1,5 @@
 {
-    "name": "Apples_ROC",
+    "name": "Apples_C3_M2_ROC_LOC",
 
     "npz_file": "/home/xingjian.zhang/sleep/0_data/05_applesNPZdata/",
 
@@ -7,7 +7,7 @@
     "device": 0,
 
     "arch": {
-        "type": "AttnSleep",
+        "type": "AttnSleep_3CH_S2_1",
         "args": {
         }
     },
@@ -15,7 +15,7 @@
     "data_loader": {
         "args":{
             "batch_size": 128,
-            "num_folds": 10
+            "num_folds": 5
         }
     },
     

@@ -207,31 +207,16 @@ class BaseTrainer:
         np.save(presPath, pres)
         np.save(labelsPath, labels)
 
-    def _create_excel(self):
+    @staticmethod
+    def _create_excel():
         """创建一个含表头的excel"""
         xls = xlwt.Workbook()
-
         sht1 = xls.add_sheet("Result")
         sht1.write(0, 0, 'epoch')
         sht1.write(0, 1, 'Train_loss')
         sht1.write(0, 2, 'Train_ACC')
         sht1.write(0, 3, 'Val_loss')
         sht1.write(0, 4, 'Val_ACC')
-
-        sht2 = xls.add_sheet("Data")
-        sht2.write(0, 0, 'W')
-        sht2.write(0, 1, 'N1')
-        sht2.write(0, 2, 'N2')
-        sht2.write(0, 3, 'N3')
-        sht2.write(0, 4, 'REM')
-        sht2.write(0, 5, 'ALL')
-        sht2.write(1, 0, self.data_count[0])
-        sht2.write(1, 1, self.data_count[1])
-        sht2.write(1, 2, self.data_count[2])
-        sht2.write(1, 3, self.data_count[3])
-        sht2.write(1, 4, self.data_count[4])
-        sht2.write(1, 5, sum(self.data_count))
-
         return xls
 
     @staticmethod

@@ -47,7 +47,7 @@ class Trainer(BaseTrainer):
         for batch_idx, (data, label) in enumerate(self.data_loader):
             data, label = data.to(self.device), label.to(self.device)
 
-            self.optimizer.zero_grad()
+            self.optimizer.zero_grad()    # 清空现存的梯度
             output = self.model(data)
 
             loss = self.criterion(output, label, self.class_weights, self.device)
